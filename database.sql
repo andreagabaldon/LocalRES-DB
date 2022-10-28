@@ -103,25 +103,30 @@ CREATE TABLE national_energy_carrier_production (
 
 CREATE TABLE generation_system (
     id SERIAL NOT NULL CONSTRAINT generation_system_pk PRIMARY KEY,
+    system_type_id int NOT NULL,
     name character varying NOT NULL,
     fuel_yield float NOT NULL,
     energy_carrier_input_1_id int NULL,
     energy_carrier_input_2_id int NULL,
     energy_carrier_output_1_id int NULL,
     energy_carrier_output_2_id int NULL,  
-    CONSTRAINT generation_system_energy_carrier_energy_carrier_input_1_fk 
+    CONSTRAINT generation_system_system_type_fk
+        FOREIGN key (system_type_id) 
+        REFERENCES system_type(id) 
+        ON UPDATE NO ACTION ON DELETE NO ACTION,
+    CONSTRAINT generation_system_energy_carrier_input_1_fk 
         FOREIGN key (energy_carrier_input_1_id) 
         REFERENCES energy_carrier(id) 
         ON UPDATE NO ACTION ON DELETE NO ACTION,
-    CONSTRAINT generation_system_energy_carrier_energy_carrier_input_2_fk 
+    CONSTRAINT generation_system_energy_carrier_input_2_fk 
         FOREIGN key (energy_carrier_input_2_id) 
         REFERENCES energy_carrier(id) 
         ON UPDATE NO ACTION ON DELETE NO ACTION,
-    CONSTRAINT generation_system_energy_carrier_energy_carrier_output_1_fk 
+    CONSTRAINT generation_system_energy_carrier_output_1_fk 
         FOREIGN key (energy_carrier_output_1_id) 
         REFERENCES energy_carrier(id) 
         ON UPDATE NO ACTION ON DELETE NO ACTION,
-    CONSTRAINT generation_system_energy_carrier_energy_carrier_output_2_fk 
+    CONSTRAINT generation_system_energy_carrier_output_2_fk 
         FOREIGN key (energy_carrier_output_2_id) 
         REFERENCES energy_carrier(id) 
         ON UPDATE NO ACTION ON DELETE NO ACTION
