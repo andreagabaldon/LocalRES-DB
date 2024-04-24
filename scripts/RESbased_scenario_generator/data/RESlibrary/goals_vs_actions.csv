@@ -1,0 +1,23 @@
+﻿Category,Action,Higher rate of renewable energy,Higher efficiency,Energy self-sufficiency,Decarbonisation of H&C,Electrification,E-mobility
+Category A : Demand,reduction_of_demand,1,3,3,1,2,2
+Category A : Demand,demand_response,1,3,3,1,3,3
+Category B : Power generation,solar_fleet,3,3,3,1,3,2
+Category B : Power generation,wind_offshore_fleet,3,2,3,1,3,2
+Category B : Power generation,hydro_fleet,3,2,3,1,3,2
+Category B : Power generation,geothermal_fleet,3,2,3,1,3,2
+Category C : Heat generation,solar_thermal,3,1,3,3,1,1
+Category C : Heat generation,biomass_boiler,3,1,3,3,1,1
+Category C : Heat generation,gas_boiler,1,1,1,3,1,1
+Category C : Heat generation,heat_pump,3,3,3,3,3,1
+Category C : Heat generation,geothermal_heat,3,1,3,3,1,1
+Category D : Biogas generation,methanisation,3,1,3,2,1,1
+Category E : Combined heat and power generation,gas_chp,1,1,1,1,1,1
+Category E : Combined heat and power generation,biomass_chp,3,1,3,2,2,1
+Category F : Storage,battery_storage,2,2,3,1,3,2
+Category F : Storage,heat_storage,2,2,3,2,2,1
+Category F : Storage,gas_storage,2,1,3,1,1,1
+Category G : Networks and transmissions,creation_of_dhn,2,2,2,2,1,1
+Category G : Networks and transmissions,connection_to_the_dhn,2,2,2,2,1,1
+Category G : Networks and transmissions,dhn_supplier,2,2,2,2,1,1
+Category H : Electric vehicles,charging_station,1,1,2,1,3,3
+Comments,"3- direct, 2- indirect,1-not necessarily  or not recommended",,,,,,
