@@ -3,7 +3,7 @@
 ## About LocalRES
 LocalRES (Local Renewable Energy Solutions) is an EU-funded project under the Horizon 2020 Programme (Grant Agreement no. 957819), focused on empowering Renewable Energy Communities (RECs) to lead the decarbonisation of local energy systems. The project develops innovative digital tools designed to facilitate the active participation of citizens and local stakeholders in the energy transition, thereby enhancing the efficiency and sustainability of energy communities.
 
-For more information, visit our [project page](https://www.example.com/localres).
+For more information, visit our [project page](https://www.localres.eu/es/)
 
 ## Repository Content
 This repository hosts the source code related to three deliverables of the LocalRES project:
