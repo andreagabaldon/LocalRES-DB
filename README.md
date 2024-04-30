@@ -3,7 +3,15 @@
 ## About LocalRES
 LocalRES (Local Renewable Energy Solutions) is an EU-funded project under the Horizon 2020 Programme (Grant Agreement no. 957819), focused on empowering Renewable Energy Communities (RECs) to lead the decarbonisation of local energy systems. The project develops innovative digital tools designed to facilitate the active participation of citizens and local stakeholders in the energy transition, thereby enhancing the efficiency and sustainability of energy communities.
 
-For more information, visit our [project page](https://www.localres.eu/es/)
+#### More information
+
+Visit our [project page](https://www.localres.eu/es/)
+
+#### User interface mockups
+
+We are currently working on developing the user interface for the Planning Tool. Meanwhile, you can take a sneak peek at the [mockups of the mobile version](https://www.figma.com/proto/qDokG0VbDz0m2YZqLuPqOS/_Planning-Tool-%2F-LocalRES?type=design&node-id=26-100146&t=XxSXEmLbPEQNaw1I-1&scaling=min-zoom&page-id=26%3A1357&starting-point-node-id=26%3A100146&mode=design). Enjoy!
+
+*Note: due to the complexity of the mockups, you may experience rendering disruptions. Also, bear in mind that these mockups are not fully functional, so the behaviour of components is limited.*
 
 ## Repository Content
 This repository hosts the source code related to three deliverables of the LocalRES project:
@@ -22,7 +30,7 @@ A crucial component of this repository is the database, a comprehensive database
 - [`pandas`](https://pypi.org/project/pandas/): Data manipulation and analysis library for Python.
 - [`pillow`](https://pypi.org/project/Pillow/): Python Imaging Library (Fork) - Adds image processing capabilities to Python.
 
-- ## License
+## License
 License: GNU GPLv3  
 The GNU General Public License is a free, copyleft license for software and other kinds of works.
 GNU General Public License Version 3
