@@ -48,3 +48,7 @@ You cannot: sublicense or hold liable.
 
 ## Disclaimer
 The content of this repository reflects only the authors' view and the European Union is not responsible for any use that may be made of the information it contains. The LocalRES consortium does not guarantee the accuracy of the data included in this repository and is not responsible for any third-party use of its contents. 
+
+
+## Cite us
+Belda, Alberto; Gabaldon, Andrea; Bernal, Iciar; Santovito, Vincenzo Ezio. LocalRES Planning Tool. Fundacion CARTIF. 2024, May. Available online:https://github.com/Fundacion-CARTIF/LocalRES-PlanningTool/ 
