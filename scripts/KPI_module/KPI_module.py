@@ -39,8 +39,167 @@ Copyright @CARTIF 2024
 import pandas as pd
 import numpy as np
 import os
-from energy_consumption import energy_consumption_function
+from scripts.KPI_module.energy_consumption import energy_consumption_function
 
+
+def kpi_peak_heat_demand(demand_profile):
+    '''
+    This function calculates the peak heat demand based on the provided demand profiles.
+
+    Parameters
+    ----------
+    demand_profile : list
+        A list of dictionaries containing the demand profiles for each building.
+
+    Returns
+    -------
+    max_sh : float
+        Maximum space heating demand.
+    max_sc : float
+        Maximum space cooling demand.
+    max_dhw : float
+        Maximum domestic hot water demand.
+    KPI_peak_heat_demand : float
+        Maximum peak heat demand in kWh.
+    '''
+    # Initialize lists to store maximum values
+    max_sh_list = []
+    max_sc_list = []
+    max_dhw_list = []
+
+    # Case 1: demand_profile is a list of dictionaries
+    if isinstance(demand_profile, list):
+        for building in demand_profile:
+            if "demand_profile" not in building:
+                raise ValueError("Each element in demand_profile must contain a 'demand_profile' key.")
+
+            demand_data = building["demand_profile"]
+
+            if not all(key in demand_data for key in ["heating_demand", "cooling_demand", "dhw_demand"]):
+                raise ValueError("Each 'demand_profile' must contain the keys 'heating_demand', 'cooling_demand', 'dhw_demand'.")
+
+            Spaceheating = demand_data["heating_demand"]
+            Spacecooling = demand_data["cooling_demand"]
+            DHW = demand_data["dhw_demand"]
+
+            max_sh = np.amax(Spaceheating)
+            max_sc = np.amax(Spacecooling)
+            max_dhw = np.amax(DHW)
+
+            max_sh_list.append(max_sh)
+            max_sc_list.append(max_sc)
+            max_dhw_list.append(max_dhw)
+
+    # Case 2: demand_profile is a single dictionary
+    elif isinstance(demand_profile, dict):
+        if "demand_profile" not in demand_profile:
+            raise ValueError("The dictionary demand_profile must contain a 'demand_profile' key.")
+
+        demand_data = demand_profile["demand_profile"]
+
+        if not all(key in demand_data for key in ["heating_demand", "cooling_demand", "dhw_demand"]):
+            raise ValueError("The 'demand_profile' must contain the keys 'heating_demand', 'cooling_demand', 'dhw_demand'.")
+
+        Spaceheating = demand_data["heating_demand"]
+        Spacecooling = demand_data["cooling_demand"]
+        DHW = demand_data["dhw_demand"]
+
+        max_sh_list.append(np.amax(Spaceheating))
+        max_sc_list.append(np.amax(Spacecooling))
+        max_dhw_list.append(np.amax(DHW))
+
+    else:
+        raise ValueError("demand_profile must be a list of dictionaries or a single dictionary.")
+
+    # Obtain final maximum values
+    max_sh = np.amax(max_sh_list) if max_sh_list else 0
+    max_sc = np.amax(max_sc_list) if max_sc_list else 0
+    max_dhw = np.amax(max_dhw_list) if max_dhw_list else 0
+
+    KPI_peak_heat_demand = max(max_sh, max_sc, max_dhw) / 1000  # Convert to MWh
+
+    return KPI_peak_heat_demand
+
+def kpi_peak_electricity_demand(demand_profile):
+    '''
+    This function calculates the peak electricity demand based on the provided demand profile.
+
+    Parameters
+    ----------
+    demand_profile : dict
+        A dictionary containing the demand profile for each building.
+
+    Returns
+    -------
+    KPI_peak_elec_demand : float
+        Maximum peak electricity demand in kWh.
+    '''
+    # Initialize list to store peak electricity demands
+    peak_demands = []
+
+    # Case 1: demand_profile is a list of dictionaries
+    if isinstance(demand_profile, list):
+        for building in demand_profile:
+            if "demand_profile" not in building:
+                raise ValueError("Each element in demand_profile must contain a 'demand_profile' key.")
+
+            demand_data = building["demand_profile"]
+
+            if "electricity_demand" not in demand_data:
+                raise ValueError("Each 'demand_profile' must contain the key 'electricity_demand'.")
+
+            electricity_demand = demand_data["electricity_demand"]
+            peak_demand = np.amax(electricity_demand)
+            peak_demands.append(peak_demand)
+
+    # Case 2: demand_profile is a single dictionary
+    elif isinstance(demand_profile, dict):
+        if "demand_profile" not in demand_profile:
+            raise ValueError("The dictionary demand_profile must contain a 'demand_profile' key.")
+
+        demand_data = demand_profile["demand_profile"]
+
+        if "electricity_demand" not in demand_data:
+            raise ValueError("The 'demand_profile' must contain the key 'electricity_demand'.")
+
+        electricity_demand = demand_data["electricity_demand"]
+        peak_demands.append(np.amax(electricity_demand))
+
+    else:
+        raise ValueError("demand_profile must be a list of dictionaries or a single dictionary.")
+
+    # Obtain the maximum electricity demand
+    KPI_peak_elec_demand = np.amax(peak_demands) / 1000  # Convert to MWh
+
+    return KPI_peak_elec_demand
+
+def kpi_ctz_factors():
+    """
+    This function defines the factors for calculating citizen KPIs.
+
+    Returns
+    -------
+    citizen : dict
+        A dictionary containing the factors for various KPI calculations.
+    """
+    citizen_kpis_factors = {
+        # ENERGY SAVINGS
+        "f_tv": 0.250,    #[kW]
+        "f_streaming":0.077,    #[kWh]
+        "f_pizza": 2,          # [kW]
+        "f_battery": 68.7,     # [kWh/charge]
+        "f_km": 354,           # [km/charge]
+        "f_elcar": 0.196,      # [kWh/km]
+        "f_wine": 540,         # [kWh/bottle of wine]
+        # CO2 SAVINGS
+        "f_trees": 25,         # [kg_CO2/year]
+        "f_em_net": 0.036,     # [kg_CO2/hour]
+        "f_ICV": 0.1163,       # [kg_CO2/km]
+        # ECONOMIC SAVINGS     # TO DEFINE
+
+    }
+
+    return citizen_kpis_factors
 
 def generation_system_function(data, demand_profile):
     '''
@@ -277,87 +436,7 @@ def total_primary_energy_function(data,building_consumption_dict):
         total_primary_energy_MWh = total_primary_energy/1000
     return total_primary_energy, total_primary_energy_MWh
 
-def kpi_peak_heat_demand(data,front_data,demand_profile):
-    '''
-    This function calculates the peak heat demand based on the provided building data.
 
-    Parameters
-    ----------
-    data : dict
-        A dictionary containing information about building statistics profiles, including generation system profiles.
-
-    Returns
-    -------
-    max_sh : float
-        Maximum space heating demand.
-    max_sc : float
-        Maximum space cooling demand.
-    max_dhw : float
-        Maximum domestic hot water demand.
-    KPI_peak_heat_demand : float
-        Maximum peak heat demand.
-    '''
-
-    Spaceheating = demand_profile["demand_profile"]["heating_demand"]
-    Spacecooling = demand_profile["demand_profile"]["cooling_demand"]
-    DHW = demand_profile["demand_profile"]["dhw_demand"]
-    
-    max_sh = np.amax(Spaceheating)
-    max_sc = np.amax(Spacecooling)
-    max_dhw = np.amax(DHW)
-    
-    KPI_peak_heat_demand = max(max_sh, max_sc, max_dhw)
-    #transform it into MWh 
-    return KPI_peak_heat_demand
-
-
-def kpi_peak_electricity_demand(data, demand_profile):
-    '''
-    This function calculates the peak electricity demand based on the provided building data.
-
-    Parameters
-    ----------
-    data : dict
-        A dictionary containing information about building statistics profiles, including generation system profiles.
-
-    Returns
-    -------
-    KPI_peak_elec_demand : float
-        Maximum peak electricity demand.
-    '''
-    Electricity = demand_profile["demand_profile"]["electricity_demand"]
-    KPI_peak_elec_demand = np.amax(Electricity)
-    #transform it into MWh 
-    return KPI_peak_elec_demand
-
-
-def kpi_ctz_factors():
-    '''
-    This function defines the factors for calculating citizen KPIs.
-
-    Returns
-    -------
-    citizen : dict
-        A dictionary containing the factors for various KPI calculations.
-    '''
-    citizen_kpis_factors = {
-        # ENERGY SAVINGS
-        "f_tv": 0.250,    #[kW]
-        "f_streaming":0.077,    #[kWh]
-        "f_pizza": 2,          # [kW]
-        "f_battery": 68.7,     # [kWh/charge]
-        "f_km": 354,           # [km/charge]
-        "f_elcar": 0.196,      # [kWh/km]
-        "f_wine": 540,         # [kWh/bottle of wine]
-        # CO2 SAVINGS
-        "f_trees": 25,         # [kg_CO2/year]
-        "f_em_net": 0.036,     # [kg_CO2/hour]
-        "f_ICV": 0.1163,       # [kg_CO2/km]
-        # ECONOMIC SAVINGS     # TO DEFINE
-
-    }
-
-    return citizen_kpis_factors  
 
 def kpi_scenario_objective(front_data):
     '''
@@ -376,8 +455,11 @@ def kpi_scenario_objective(front_data):
     num_members : int
         The number of members in the scenario.
     '''
-    num_members = front_data["num_building"]
-    
+    if isinstance(front_data, dict) and "num_building" in front_data:
+        num_members = front_data["num_building"]
+    else:
+        num_members = len(front_data)
+
     return num_members
 
 
@@ -391,9 +473,7 @@ def tv_h(citizen_kpis_factors,total_primary_energy):
     ----------
     citizen_kpis_factors : dict
         A dictionary containing information about citizen factors.
-    data : dict
-        A dictionary containing information about building statistics profiles, including generation system profiles.
-    total_primary_energy : dict
+     total_primary_energy : dict
         A dictionary containing information about total_primary_energy 
 
     Returns
@@ -401,7 +481,16 @@ def tv_h(citizen_kpis_factors,total_primary_energy):
     TV_h : float
         Equivalent TV hours.
     '''
-    TV_h = total_primary_energy / citizen_kpis_factors["f_tv"]  # [h]
+    f_tv = citizen_kpis_factors["f_tv"]  # Factor for TV hours
+
+    if isinstance(total_primary_energy, list):  # Check if it's a list
+        TV_h = [(total_primary_energy[i] / f_tv) for i in
+                range(len(total_primary_energy))]  # Element-wise division for list
+    elif isinstance(total_primary_energy, (int, float)):  # Check if it's a float or integer
+        TV_h = total_primary_energy / f_tv  # Single value division for float or int
+    else:
+        raise ValueError("total_primary_energy must be a float, int, or list.")
+
     return TV_h
 
 
@@ -426,7 +515,17 @@ def streaming_h(citizen_kpis_factors,total_primary_energy):
         Equivalent streaming hours
     '''
     
-    streaming_h = total_primary_energy / citizen_kpis_factors["f_streaming"]  # [h]
+    f_streaming= citizen_kpis_factors["f_streaming"]  # [h]
+    print(f_streaming)
+
+    if isinstance(total_primary_energy, list):  # Check if it's a list
+        streaming_h = [(total_primary_energy[i] / f_streaming) for i in
+                range(len(total_primary_energy))]  # Element-wise division for list
+    elif isinstance(total_primary_energy, (int, float)):  # Check if it's a float or integer
+        streaming_h = total_primary_energy / f_streaming  # Single value division for float or int
+    else:
+        raise ValueError("total_primary_energy must be a float, int, or list.")
+
     return streaming_h
 
 
@@ -451,7 +550,15 @@ def pizza_h(citizen_kpis_factors,total_primary_energy):
         Equivalent pizza consumption hours.
     '''
     
-    Pizza_h = total_primary_energy / citizen_kpis_factors["f_pizza"]  # [h]
+    f_pizza =citizen_kpis_factors["f_pizza"]  # [h]
+
+    if isinstance(total_primary_energy, list):  # Check if it's a list
+        Pizza_h = [(total_primary_energy[i] / f_pizza) for i in
+                       range(len(total_primary_energy))]  # Element-wise division for list
+    elif isinstance(total_primary_energy, (int, float)):  # Check if it's a float or integer
+        Pizza_h = total_primary_energy / f_pizza  # Single value division for float or int
+    else:
+        raise ValueError("total_primary_energy must be a float, int, or list.")
     return Pizza_h
 
 
@@ -475,7 +582,14 @@ def battery_charges(citizen_kpis_factors,total_primary_energy):
     Battery_charges : float
         Number of battery charges.
     '''
-    Battery_charges = total_primary_energy / citizen_kpis_factors["f_battery"]  # [charges]
+    f_battery= citizen_kpis_factors["f_battery"]  # [charges]
+    if isinstance(total_primary_energy, list):  # Check if it's a list
+        Battery_charges = [(total_primary_energy[i] / f_battery) for i in
+                       range(len(total_primary_energy))]  # Element-wise division for list
+    elif isinstance(total_primary_energy, (int, float)):  # Check if it's a float or integer
+        Battery_charges = total_primary_energy / f_battery  # Single value division for float or int
+    else:
+        raise ValueError("total_primary_energy must be a float, int, or list.")
     return Battery_charges
 
 
@@ -500,11 +614,20 @@ def el_car_charges(citizen_kpis_factors,total_primary_energy):
         Number of electric car charges.
     '''
 
-    ElCar_charges = total_primary_energy / citizen_kpis_factors["f_km"]  # [charges]
+    f_km = citizen_kpis_factors["f_km"]  # [km/charges]
+    f_elcar = citizen_kpis_factors["f_elcar"]  # [kWh/km]
+
+    if isinstance(total_primary_energy, list):  # Check if it's a list
+        ElCar_charges = [(total_primary_energy[i] / (f_km*f_elcar)) for i in
+                       range(len(total_primary_energy))]  # Element-wise division for list
+    elif isinstance(total_primary_energy, (int, float)):  # Check if it's a float or integer
+        ElCar_charges = total_primary_energy /(f_km*f_elcar) # Single value division for float or int
+    else:
+        raise ValueError("total_primary_energy must be a float, int, or list.")
     return ElCar_charges
 
 
-def trees_number(citizen_kpis_factors,total_primary_energy):
+def trees_number(citizen_kpis_factors,total_co2):
     '''
     Trees required for carbon offset
     Description: Calculates the number of trees needed to offset the carbon emissions 
@@ -524,11 +647,19 @@ def trees_number(citizen_kpis_factors,total_primary_energy):
         Number of trees required for carbon offset.
     '''
 
-    Trees_number = total_primary_energy / citizen_kpis_factors["f_trees"]  # [trees/year]
+    f_trees= citizen_kpis_factors["f_trees"]  # [trees/year]
+
+    if isinstance(total_co2, list):  # Check if it's a list
+        Trees_number = [(total_co2[i] / f_trees) for i in
+                       range(len(total_co2))]  # Element-wise division for list
+    elif isinstance(total_co2, (int, float)):  # Check if it's a float or integer
+        Trees_number = total_co2 / f_trees  # Single value division for float or int
+    else:
+        raise ValueError("total_primary_energy must be a float, int, or list.")
     return Trees_number
 
 
-def streaming_emission_hours(citizen_kpis_factors,total_primary_energy):
+def streaming_emission_hours(citizen_kpis_factors,total_co2):
     '''
     Streaming emissions impact
     Description: Assesses the environmental impact in terms of streaming usage 
@@ -549,11 +680,18 @@ def streaming_emission_hours(citizen_kpis_factors,total_primary_energy):
         Streaming emissions impact in hours.
     '''
 
-    streaming_emissionhours = total_primary_energy / citizen_kpis_factors["f_em_net"]  # [h]
+    f_em_net = citizen_kpis_factors["f_em_net"]  # [h]
+    if isinstance(total_co2, list):  # Check if it's a list
+        streaming_emissionhours = [(total_co2[i] / f_em_net) for i in
+                       range(len(total_co2))]  # Element-wise division for list
+    elif isinstance(total_co2, (int, float)):  # Check if it's a float or integer
+        streaming_emissionhours = total_co2 / f_em_net  # Single value division for float or int
+    else:
+        raise ValueError("total_primary_energy must be a float, int, or list.")
     return streaming_emissionhours
 
 
-def icv_km(citizen_kpis_factors,total_primary_energy):
+def icv_km(citizen_kpis_factors,total_co2):
     '''
     Carbon emissions per kilometer
     Description: Calculates the carbon emissions per kilometer traveled 
@@ -574,7 +712,15 @@ def icv_km(citizen_kpis_factors,total_primary_energy):
         Carbon emissions per kilometer.
     '''
 
-    ICV_km = total_primary_energy / citizen_kpis_factors["f_ICV"]  # [km]
+    f_ICV= citizen_kpis_factors["f_ICV"]  # [km]
+
+    if isinstance(total_co2, list):  # Check if it's a list
+        ICV_km = [(total_co2[i] / f_ICV) for i in
+                       range(len(total_co2))]  # Element-wise division for list
+    elif isinstance(total_co2, (int, float)):  # Check if it's a float or integer
+        ICV_km = total_co2 / f_ICV  # Single value division for float or int
+    else:
+        raise ValueError("total_primary_energy must be a float, int, or list.")
     return ICV_km
 
 def wine_bottles(citizen_kpis_factors,total_primary_energy):
@@ -597,7 +743,15 @@ def wine_bottles(citizen_kpis_factors,total_primary_energy):
         Number of wine bottles generated.
     '''
 
-    Wine_bottles = total_primary_energy / citizen_kpis_factors["f_wine"]  # [bottles]
+    f_wine= citizen_kpis_factors["f_wine"]  # [bottles]
+
+    if isinstance(total_primary_energy, list):  # Check if it's a list
+        Wine_bottles = [(total_primary_energy[i] / f_wine) for i in
+                       range(len(total_primary_energy))]  # Element-wise division for list
+    elif isinstance(total_primary_energy, (int, float)):  # Check if it's a float or integer
+        Wine_bottles = total_primary_energy / f_wine  # Single value division for float or int
+    else:
+        raise ValueError("total_primary_energy must be a float, int, or list.")
     return Wine_bottles
 
 def save_to_csv(building_consumption_dict, demand_profile, total_primary_energy_MWh, KPI_peak_heat_demand, KPI_peak_elec_demand, num_members,
@@ -646,64 +800,52 @@ def save_to_csv(building_consumption_dict, demand_profile, total_primary_energy_
         DataFrame containing energy consumption per system type.
     '''
 
-    # Define CSV file names
-    csv_filename_consumption = "building_id_1.csv"
-    csv_filename_kpi = "ctz_KPIs.csv"
-    
-    # Create the 'outputs' folder if it doesn't exist
-    output_folder = os.path.join(os.getcwd(), 'outputs')
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
+    # Initialize the variable to store the total energy use
+    Energy_use_MWh = 0
+    # Case 1: demand_profile is a list of dictionaries
+    if isinstance(demand_profile, list):
+        for demand in demand_profile:
+            profile = demand["demand_profile"]
+            # Sum the values for electricity, heating, cooling, and DHW demand for the current profile
+            community_energy_use_MWh = (sum(profile["electricity_demand"])
+                                        + sum(profile["heating_demand"])
+                                        + sum(profile["cooling_demand"])
+                                        + sum(profile["dhw_demand"])) / 1000
+            # Add the community energy use to the total energy use
+            Energy_use_MWh += community_energy_use_MWh
 
-    # Full path of the CSV file for building consumption
-    csv_filepath_1 = os.path.join(output_folder, csv_filename_consumption)
+    # Case 2: demand_profile is a single dictionary
+    elif isinstance(demand_profile, dict):
+        profile = demand_profile["demand_profile"]
+        # Sum the values for electricity, heating, cooling, and DHW demand for the current profile
+        community_energy_use_MWh = (sum(profile["electricity_demand"])
+                                    + sum(profile["heating_demand"])
+                                    + sum(profile["cooling_demand"])
+                                    + sum(profile["dhw_demand"])) / 1000
+        # Add the community energy use to the total energy use
+        Energy_use_MWh += community_energy_use_MWh
 
-    # Create DataFrame with columns for building consumption
-    building_consumption_df = pd.DataFrame(columns=["elec_consumption", "heat_consumption", "cool_consumption", "dhw_consumption"])
+    else:
+        raise ValueError("demand_profile must be a list of dictionaries or a single dictionary.")
 
-    # Add building consumption data to the DataFrame
-    for i in range(8760):
-        building_consumption_df.loc[i] = {
-            "elec_consumption": building_consumption_dict["elec_consumption"][i],
-            "heat_consumption": building_consumption_dict["heat_consumption"][i],
-            "cool_consumption": building_consumption_dict["cool_consumption"][i],
-            "dhw_consumption": building_consumption_dict["dhw_consumption"][i]
-        }
-
-    # Write DataFrame to the CSV file
-    building_consumption_df.to_csv(csv_filepath_1, index=False)
-    Energy_use_MWh = (sum(demand_profile["demand_profile"]["electricity_demand"])+sum(demand_profile["demand_profile"]["heating_demand"])
-                      +sum(demand_profile["demand_profile"]["cooling_demand"])+sum(demand_profile["demand_profile"]["dhw_demand"]))/1000
     # Create DataFrame for citizen KPIs
-    ctz_kpi_df = pd.DataFrame({
-        "KPI": [
-            "Energy_use_[MWh]",            
-            "KPI_peak_heat_demand_[kWh]",
-            "KPI_peak_elec_demand_[kWh]",
-            "total_primary_energy_[MWh]",
-            "num_members",
-            "EquivalentTVHours_[kW]",
-            "EquivalentstreamingHours_[kW]",
-            "PizzaConsumptionComparison_[kW]", 
-            "BatteryUsageEstimation_[kWh/charge]", 
-            "ElectricCarChargingEstimation_[kWh/charge]",
-            "WineBottlesProduction_[kWh/bottle]",
-            "TreesRequiredForCarbonOffset_[kg_CO2/year]",
-            "streamingEmissionsImpact_[kg_CO2/hour]", 
-            "CarbonEmissionsPerKilometer_[kg_CO2/km]"
-            
-        ],
-        "Results": [
-            Energy_use_MWh, KPI_peak_heat_demand, KPI_peak_elec_demand,total_primary_energy_MWh,num_members, TV_h, streaming_h, Pizza_h, Battery_charges, ElCar_charges, Wine_bottles, Trees_number,
-            streaming_emissionhours, ICV_km
-        ]
-    })
-    
-    # Full path of the CSV file for citizen KPIs
-    csv_filepath_2 = os.path.join(output_folder, csv_filename_kpi)
-    
-    # Write DataFrame of KPIs to the CSV file (without header if the file already exists)
-    ctz_kpi_df.to_csv(csv_filepath_2, index=False)
-    
-    return ctz_kpi_df, building_consumption_df
+    kpis_community = [
+        {"id": 0, "name": "Energy_use_[MWh]", "value": Energy_use_MWh, "unit": "MWh"},
+        {"id": 1, "name": "KPI_peak_heat_demand_[kWh]", "value": KPI_peak_heat_demand, "unit": "kWh"},
+        {"id": 2, "name": "KPI_peak_elec_demand_[kWh]", "value": KPI_peak_elec_demand, "unit": "kWh"},
+        {"id": 3, "name": "total_primary_energy_[MWh]", "value": total_primary_energy_MWh, "unit": "MWh"},
+        {"id": 4, "name": "num_members", "value": num_members, "unit": "a.u."},
+        {"id": 5, "name": "EquivalentTVHours_[hours]", "value": TV_h, "unit": "kW"},
+        {"id": 6, "name": "EquivalentstreamingHours_[hours]", "value": streaming_h, "unit": "kW"},
+        {"id": 7, "name": "PizzaConsumptionComparison_[pizzas]", "value": Pizza_h, "unit": "kW"},
+        {"id": 8, "name": "BatteryUsageEstimation_[charges]", "value": Battery_charges, "unit": "kWh/charge"},
+        {"id": 9, "name": "ElectricCarChargingEstimation_[charges]", "value": ElCar_charges, "unit": "kWh/charge"},
+        {"id": 10, "name": "WineBottlesProduction_[bottles]", "value": Wine_bottles, "unit": "kWh/bottle"},
+        {"id": 11, "name": "TreesRequiredForCarbonOffset_[trees]", "value": Trees_number, "unit": "kgCO2/year"},
+        {"id": 12, "name": "streamingEmissionsImpact_[hours]", "value": streaming_emissionhours,
+         "unit": "kgCO2/hour"},
+        {"id": 13, "name": "CarbonEmissionsPerKilometer_[km]", "value": ICV_km, "unit": "kgCO2/km"},
+    ]
+
+    return kpis_community
 

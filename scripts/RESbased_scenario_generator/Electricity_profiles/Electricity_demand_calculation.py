@@ -29,7 +29,7 @@ import pandas as pd
 import numpy as np
 import os
 import random
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 # Function to compare the UI usuario answer and those from LPG in the case of no exact match
 def are_dicts_similar(dict1, dict2, threshold):

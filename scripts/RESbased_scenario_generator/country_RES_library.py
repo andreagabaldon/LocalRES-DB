@@ -61,12 +61,28 @@ class Country:
 
 def country_res_recommendations (country_code):
     #read the recommended scenarios per country according to scenarios from https://www.researchgate.net/publication/333371930_Development_of_Energy_demand_for_buildings_industry_and_transport_in_the_SET-Nav_pathways_-_WP5_Summary_report
-    recommendations='country_scenarios_recomended.csv'
-    country_recommended_scenarios_df= pd.read_csv(os.path.join(os.getcwd(), 'data\\RESlibrary', recommendations))
-    #create a mask to filter information according to country selected by the user
-    mask=country_recommended_scenarios_df['Country'] == country_code
-    country_recommended_scenarios_df_filtered=country_recommended_scenarios_df[mask]
-    return country_recommended_scenarios_df_filtered
+    json_file_path= os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                 'data', 'RESlibrary','country_scenarios_recommended.json')
+    # Load the JSON file
+    with open(json_file_path, 'r') as file:
+        data = json.load(file)
+
+    # Iterate over each entry to find the properties for the specified country
+    for entry in data:
+        if entry['Country'] == country_code:
+            properties = {
+                "Ambitious_renovator": eval(entry['properties']["Ambitious_renovator"]),
+                "HighDHN": eval(entry['properties']["HighDHN"]),
+                "HighElectrification": eval(entry['properties']["HighElectrification"]),
+                "Biomass": eval(entry['properties']["Biomass"]),
+                "Solar": eval(entry['properties']["Solar"]),
+                "SmartHeating": eval(entry['properties']["SmartHeating"]),
+                "Allow_gas": eval(entry['properties']["Allow_gas"]),
+            }
+            return properties
+
+    # If the country is not found, return an empty dictionary or a message
+    return f"No data found for country: {country_code}"
     
 #read csvs and create the class country from it
 def country_library(country_code):

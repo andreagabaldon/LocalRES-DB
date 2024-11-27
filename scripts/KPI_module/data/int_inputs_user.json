@@ -1,0 +1,42 @@
+[
+  {
+    "geom": "MULTIPOLYGON (((-2.5441627 43.3620648, -2.5439 43.36217769999999, -2.5438697 43.3621629, -2.5438937 43.3621279, -2.543936 43.36214319999998, -2.5440252 43.36201270000002, -2.5437021 43.3618959, -2.5437407 43.3618439, -2.5441335 43.3619782, -2.544116 43.3620062, -2.5441627 43.3620648)))",
+    "building_use_id": 5,
+    "common_profile_id": 3,
+    "construction_year": 1989.0,
+    "subdivision_total": null,
+    "subdivision_community": null,
+    "occupants": 3,
+    "building_statistics_profile_id": 158
+  },
+  {
+    "geom": "MULTIPOLYGON (((-2.543567 43.36184959999998, -2.5437021 43.3618959, -2.5440252 43.36201270000002, -2.543936 43.36214319999998, -2.5438937 43.3621279, -2.5438697 43.3621629, -2.5438084 43.36224939999999, -2.5433873 43.36209539999999, -2.543567 43.36184959999998)))",
+    "building_use_id": 5,
+    "common_profile_id": 3,
+    "construction_year": 1989,
+    "subdivision_total": null,
+    "subdivision_community": null,
+    "occupants": 3,
+    "building_statistics_profile_id": 158
+  },
+  {
+    "geom": "MULTIPOLYGON (((-2.54453049686192 43.36206103546366, -2.544599219486898 43.36194649331249, -2.5447596 43.3619974, -2.5446806 43.362129, -2.5445205 43.3620782, -2.5445307 43.3620611, -2.54453049686192 43.36206103546366)))",
+    "building_use_id": 4,
+    "common_profile_id": 2,
+    "construction_year": 1945,
+    "subdivision_total": null,
+    "subdivision_community": null,
+    "occupants": 3,
+    "building_statistics_profile_id": 148
+  },
+  {
+    "geom": "MULTIPOLYGON (((-2.544599219486898 43.36194649331249, -2.54453049686192 43.36206103546366, -2.5444838 43.3620462, -2.5444956 43.3620267, -2.5444366 43.36200789999999, -2.5444937 43.361913, -2.544599219486898 43.36194649331249)))",
+    "building_use_id": 6,
+    "common_profile_id": 3,
+    "construction_year": 1945,
+    "subdivision_total": null,
+    "subdivision_community": null,
+    "occupants": 3,
+    "building_statistics_profile_id": 162
+  }
+]

@@ -34,10 +34,180 @@ Copyright @CARTIF 2024
 
 '''
 
+"""
 
+Explanation of the script:
+
+1- Accessing Database Information:
+The function generation_system_function accesses the database to retrieve the parameters needed to calculate consumption and creates a dictionary for each system:
+generation_system_profile = {
+    "heating_system": {
+        "system_type": EC_type,
+        "fuel_yield_1": FY_1,
+        "fuel_yield_2": FY_2,
+    } 
+}
+Calling the energy_consumption Function:
+The dictionary {} is passed to the energy_consumption function, where it first filters the type of system being processed and patches it if the corresponding demand exists in the demand profile.
+Example:
+    if 'heating_system' in generation_system_profile and 'heating_demand' in demand_profile:
+    If this condition is true, consumption is calculated using fuel_yield_1 and the demand profile.
+
+Assumption: All cases of generation_system have fuel_yield_2 = 0, except for CHP systems. However, no baseline case is derived from this technology, so filtering for fuel_yield_2 is not applied.
+
+Returning to generation_system_function:
+Once the consumption profile is calculated, the script returns to the generation_system_function to save the profile and continue with the next system.
+
+The function ultimately returns:
+building_consumption_dict[f"building_id_{i+1}"] = {    
+    "elec_consumption": electricity_consumption,
+    "heat_consumption": heating_consumption,
+    "cool_consumption": cooling_consumption,
+    "dhw_consumption": dhw_consumption,
+    "generation_system_profile_id": generation_system_profile_id 
+}
+"""
+
+
+def generation_system_function(front_data, data, demand_profile):
+    """
+    This function processes data related to generation systems and calculates energy consumption based on the provided profiles.
+    It reads information about generation system profiles, including heating, cooling, electricity, and DHW systems. It then iterates through each system and calculates the energy consumption.
+
+    Parameters
+    ----------
+    front_data : list or dict
+        A list or dictionary containing building data.
+    data : list or dict
+        A list or dictionary containing information about generation system profiles, demand profiles, and building statistics.
+    demand_profile : list or dict
+        A list or dictionary containing information about demand profiles for heating, cooling, electricity, and DHW.
+
+    Returns
+    -------
+    building_consumption_dict : dict
+        A dictionary containing the calculated energy consumption values for each building.
+    """
+    building_consumption_dict = {}
+
+    # Count the number of buildings in front_data
+    if isinstance(front_data, list):
+        items = [item for item in front_data if "building_use_id" in item]
+    elif isinstance(front_data, dict):
+        items = [front_data] if "building_use_id" in front_data else []
+
+    for i, item in enumerate(items):
+        # Caso 1: building_statistics_profile_id está en front_data
+        if "building_statistics_profile_id" in item:
+            print(f'{item}')
+            building_statistics_profile_id = item["building_statistics_profile_id"]
+
+            building_profile = next(
+                (profile for profile in data if profile.get("id") == building_statistics_profile_id), None)
+            generation_system_p = building_profile.get("generation_system_profile", {})
+            demand_profile_for_building = demand_profile[i].get("demand_profile", {})
+
+            # Initialize lists to store generation system profiles and consumption values
+            heating_consumption = []
+            electricity_consumption = []
+            dhw_consumption = []
+            cooling_consumption = []
+
+            # Extract individual system profiles
+            heating_system = generation_system_p.get("heating_system", {})
+            electricity_system = generation_system_p.get("electricity_system", {})
+            dhw_system = generation_system_p.get("dhw_system", {})
+            cooling_system = generation_system_p.get("cooling_system", {})
+            generation_system_profile_id = generation_system_p.get("id", {})
+        else:
+            building_statistics_profiles = data.get("building_statistics_profile", [])
+            # Initialize dictionaries to store generation system information and consumption values
+            if isinstance(building_statistics_profiles, dict):
+                building_statistics_profiles = [building_statistics_profiles]
+
+            # Loop through each building's statistics profile
+            for building_profile in building_statistics_profiles:
+                # Extract generation system information for each building
+                generation_system_p = building_profile["generation_system_profile"]
+                demand_profile_for_building = demand_profile["demand_profile"]
+                # Initialize lists to store generation system profiles and consumption values
+                generation_system_profile_list = []
+                heating_consumption = []
+                electricity_consumption = []
+                dhw_consumption = []
+                cooling_consumption = []
+
+                # Extract individual system profiles
+                heating_system = generation_system_p.get("heating_system", {})
+                electricity_system = generation_system_p.get("electricity_system", {})
+                dhw_system = generation_system_p.get("dhw_system", {})
+                cooling_system = generation_system_p.get("cooling_system", {})
+                generation_system_profile_id = generation_system_p.get("id", {})
+
+        # Processing heating system
+        if heating_system:
+            EC_type = "heating_demand"
+            demand_profile_list=demand_profile_for_building[EC_type]
+            FY_1 = heating_system.get("fuel_yield1")
+            heating_consumption = energy_consumption_function(fuel_yield1=FY_1,demand_profile_list=demand_profile_list)
+            if heating_consumption is None:
+                heating_consumption = [0] * 8760
+        else:
+            heating_consumption = [0] * 8760
+
+        # Processing electricity system
+        if electricity_system:
+            EC_type = "electricity_demand"
+            FY_1 = 1
+            demand_profile_list=demand_profile_for_building[EC_type]
+            electricity_consumption =energy_consumption_function(fuel_yield1=FY_1,demand_profile_list=demand_profile_list)
+            if electricity_consumption is None:
+                electricity_consumption = [0] * 8760
+        else:
+            electricity_consumption = [0] * 8760
+
+        # Processing DHW system
+        if dhw_system:
+            EC_type = "dhw_demand"
+            FY_1 = dhw_system.get("fuel_yield1")
+            demand_profile_list=demand_profile_for_building[EC_type]
+            dhw_consumption =energy_consumption_function(fuel_yield1=FY_1,demand_profile_list=demand_profile_list)
+            if dhw_consumption is None:
+                dhw_consumption = [0] * 8760
+        else:
+            dhw_consumption = [0] * 8760
+
+        # Processing cooling system
+        if cooling_system:
+            EC_type = "cooling_demand"
+            FY_1 = cooling_system.get("fuel_yield1")
+            FY_2 = cooling_system.get("fuel_yield2")
+            generation_system_profile = {
+                "cooling_system": {
+                    "system_type": EC_type,
+                    "fuel_yield_1": FY_1,
+                    "fuel_yield_2": FY_2,
+                }
+            }
+            demand_profile_list=demand_profile_for_building[EC_type]
+            cooling_consumption =energy_consumption_function(fuel_yield1=FY_1,demand_profile_list=demand_profile_list)
+            if cooling_consumption is None:
+                cooling_consumption = [0] * 8760
+        else:
+            cooling_consumption = [0] * 8760
+
+        building_consumption_dict[f"building_id_{i + 1}"] = {
+            "elec_consumption": electricity_consumption,
+            "heat_consumption": heating_consumption,
+            "cool_consumption": cooling_consumption,
+            "dhw_consumption": dhw_consumption,
+            "generation_system_profile_id": generation_system_profile_id
+        }
+
+    return building_consumption_dict
 # %% ENERGY CONSUMPTION
 
-def energy_consumption_function(generation_system_profile, demand_profile):
+def energy_consumption_function(fuel_yield1,demand_profile_list):
     '''
     This function calculates the energy consumption for different systems based on the provided generation system profiles and demand profiles.
     It iterates through each system in the generation system profile and checks if the corresponding demand exists in the demand profile. If the demand is present, it calculates the energy consumption using the fuel yield values of the respective systems.
@@ -66,14 +236,11 @@ def energy_consumption_function(generation_system_profile, demand_profile):
 
     Parameters
     ----------
-    generation_system_profile : dict
-        A dictionary containing information about the generation systems installed in the buildings, including heating, cooling, electricity, and DHW systems.
+    fuel_yiel1 : float
+        efficiency (or fuel yield) of the heating, cooling, electricity, and DHW systems.
 
-    demand_profile : dict
-        A dictionary containing information about the demand profiles for heating, cooling, electricity, and DHW.
-
-    generation_systems : dict
-        A dictionary containing the specific parameters of each generation system.
+    demand_profile_list : dict
+        A list with one demand profiles: heating, cooling, electricity, and DHW needs
 
     Returns
     -------
@@ -82,59 +249,9 @@ def energy_consumption_function(generation_system_profile, demand_profile):
 
 
     '''
-    # Initialize an empty list to store the calculated consumption values
-    consumption_per_generation_system = []
-    
-    # Check if heating demand is present
-    try:
-        if 'heating_system' in generation_system_profile and 'heating_demand' in demand_profile['demand_profile']:
-            # If heating demand is present, proceed with calculations
-            # Create a list of fuel yield values for heating
-            fuel_yield_1_heating_list = [generation_system_profile["heating_system"]["fuel_yield_1"]] * 8760
-            # Calculate heating consumption
-            consumption_per_generation_system = [demand / fuel_yield for demand, fuel_yield in zip(demand_profile['demand_profile']['heating_demand'], fuel_yield_1_heating_list)]
-            # Extend consumption list with heating consumption
-            # consumption_per_generation_system.extend(heating_consumption_list)
-    except KeyError:
-        pass
-    
-    # Check if domestic hot water (DHW) demand is present
-    try:
-        if 'dhw_system' in generation_system_profile and 'dhw_demand' in demand_profile['demand_profile']:
-            # If DHW demand is present, proceed with calculations
-            # Create a list of fuel yield values for DHW
-            fuel_yield_1_dhw_list = [generation_system_profile["dhw_system"]["fuel_yield_1"]] * 8760
-            # Calculate DHW consumption
-            consumption_per_generation_system = [demand / fuel_yield for demand, fuel_yield in zip(demand_profile['demand_profile']['dhw_demand'], fuel_yield_1_dhw_list)]
-            # Extend consumption list with DHW consumption
-            # consumption_per_generation_system.extend(dhw_consumption_list)
-    except KeyError:
-        pass
-    
-    # Check if electricity demand is present
-    try:
-        if 'electricity_system' in generation_system_profile and 'electricity_demand' in demand_profile['demand_profile']:
-            # If electricity demand is present, proceed with calculations
-            # Create a list of fuel yield values for electricity
-            fuel_yield_1_electricity_list = [generation_system_profile["electricity_system"]["fuel_yield_1"]] * 8760
-            # Calculate electricity consumption
-            consumption_per_generation_system = [demand / fuel_yield for demand, fuel_yield in zip(demand_profile['demand_profile']['electricity_demand'], fuel_yield_1_electricity_list)]
-            # Extend consumption list with electricity consumption
-            # consumption_per_generation_system.extend(electricity_consumption_list)
-    except KeyError:
-        pass
-    
-    # Check if cooling demand is present
-    try:
-        if 'cooling_system' in generation_system_profile and 'cooling_demand' in demand_profile['demand_profile']:
-            # If cooling demand is present, proceed with calculations
-            # Create a list of fuel yield values for cooling
-            fuel_yield_1_cooling_list = [generation_system_profile["cooling_system"]["fuel_yield_1"]] * 8760
-            # Calculate cooling consumption
-            consumption_per_generation_system = [demand / fuel_yield for demand, fuel_yield in zip(demand_profile['demand_profile']['cooling_demand'], fuel_yield_1_cooling_list)]
-            # Extend consumption list with cooling consumption
-            # consumption_per_generation_system.extend(cooling_consumption_list)
-    except KeyError:
-        pass
 
-    return consumption_per_generation_system
+    consumption= [x/fuel_yield1 for x in demand_profile_list]
+
+
+
+    return consumption
