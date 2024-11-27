@@ -33,7 +33,7 @@ def generate_baseline_pathway_intermediate(data, front_data):
     #calculate energy consumption based on the technology
     building_consumption_dict = generation_system_function(data=data, front_data=front_data, demand_profile=demand_profile)
     #create baseline object
-    baseline = baseline_pathway_intermediate(front_data=front_data, geojson_file=geojson_file, demand_profile=demand_profile, building_consumption_dict=building_consumption_dict )
+    baseline = baseline_pathway_intermediate(front_data=front_data, data=data, geojson_file=geojson_file, demand_profile=demand_profile, building_consumption_dict=building_consumption_dict )
     #calculate kpis per building
     citizen_KPIs_per_building = get_indicators_from_baseline(front_data, data, building_consumption_dict, demand_profile)
     #calculate total aggregated demand
@@ -65,7 +65,7 @@ current_path=os.path.dirname(os.path.abspath(__file__))
 # choose simple (1) or intermmediate (2) pathway (the latter being the one with higher user inputs)
 pathway=1
 #import path
-if pathway==2:
+if pathway==1:
     #inputs from use in the simple pathway
     front_data={
         "num_building": 3,

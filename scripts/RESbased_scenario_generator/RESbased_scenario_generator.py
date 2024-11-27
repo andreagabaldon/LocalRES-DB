@@ -347,8 +347,19 @@ def baseline_pathway_simple(data, front_data, demand_profile, building_consumpti
     
     # Initialize lists to store building and asset context dictionaries
     building_asset_context = []
-    
-       
+    # get generation_system_profile
+    building_statistics_profiles = data.get("building_statistics_profile", [])
+    # Initialize dictionaries to store generation system information and consumption values
+    if isinstance(building_statistics_profiles, dict):
+        building_statistics_profiles = [building_statistics_profiles]
+
+    # Loop through each building's statistics profile
+    for building_profile in building_statistics_profiles:
+        # Extract generation system information for each building
+        generation_system_p = building_profile["generation_system_profile"]
+        demand_profile_for_building = demand_profile["demand_profile"]
+
+
     # Loop through each building
     for id_building in range(num_building):
         # Build the building dictionary
@@ -365,10 +376,10 @@ def baseline_pathway_simple(data, front_data, demand_profile, building_consumpti
             "context_id": 1,  # The base context always has context_id: 1
             "building_consumption": {
                 "building_consumption_id": id_building + 1,
-                "elec_consumption": building_consumption["elec_consumption"],
-                "heat_consumption": building_consumption["heat_consumption"],
-                "cool_consumption": building_consumption["cool_consumption"],
-                "dhw_consumption": building_consumption["dhw_consumption"]
+                "elec_consumption": list(building_consumption["elec_consumption"]),
+                "heat_consumption": list(building_consumption["heat_consumption"]),
+                "cool_consumption": list(building_consumption["cool_consumption"]),
+                "dhw_consumption": list(building_consumption["dhw_consumption"])
             },
             "building": {
                 "geom": geom,
@@ -388,7 +399,8 @@ def baseline_pathway_simple(data, front_data, demand_profile, building_consumpti
                     "dhw_demand": demand_profile["demand_profile"]["dhw_demand"],
                     "electricity_demand":  demand_profile["demand_profile"]["electricity_demand"],
                 }
-            }
+            },
+            "generation_system_profile": generation_system_p
         }
         building_asset_context.append(building_dict)   
         
@@ -551,7 +563,7 @@ def calculate_areas(geojson_file):
     return areas, heights, community_demand
 
 
-def baseline_pathway_intermediate(front_data, geojson_file, demand_profile, building_consumption_dict):
+def baseline_pathway_intermediate(front_data, data, geojson_file, demand_profile, building_consumption_dict):
     """
     Function to calculate baseline pathway intermediate.
 
@@ -588,6 +600,11 @@ def baseline_pathway_intermediate(front_data, geojson_file, demand_profile, buil
 
         # Get the building consumption data using the constructed key
         building_consumption = building_consumption_dict[building_id_key]
+        #get generation_system_profile
+        building_statistics_profile_id = item_output["building_statistics_profile_id"]
+        building_profile = next((profile for profile in data if profile.get("id") == building_statistics_profile_id),
+                                None)
+        generation_system_p = building_profile.get("generation_system_profile", {})
         # Build the building dictionary
         building_dict = {
             "generation_system_profile_id": building_consumption["generation_system_profile_id"],
@@ -618,7 +635,8 @@ def baseline_pathway_intermediate(front_data, geojson_file, demand_profile, buil
                     "dhw_demand": demand["dhw_demand"],
                     "electricity_demand": demand["electricity_demand"]
                 },
-            }
+            },
+            "generation_system_profile": generation_system_p
         }
 
         building_asset_context.append(building_dict)

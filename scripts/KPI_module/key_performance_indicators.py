@@ -26,6 +26,7 @@ def handle_demand_profile(building_asset_context,generation_system_profile,consu
             fuel_yield1_dhw = generation_system_profile.get('dhw_system', {}).get('fuel_yield1', 1)
         else:
             fuel_yield1_dhw = 0
+            consumption_profile['dhw_consumption']=[0]*consumption_profile_length
 
         # Calculate demand profile using the consumption profile and fuel yields
         demand_profile = {
@@ -78,15 +79,17 @@ def add_electricity_consumption(total_electricity_use, consumption):
     return total_electricity_use
 
 def check_system_type_to_get_consumption(system_name,consumption_profile):
+    print(type(consumption_profile))
+    print(consumption_profile.keys())
     system_type=None
     if system_name == "dhw_system_id":
-        consumption = consumption_profile['dhw_consumption'].copy()
+        consumption = consumption_profile["dhw_consumption"].copy()
         system_type='dhw_system'
     elif system_name == 'heating_system_id':
-        consumption = consumption_profile['heat_consumption'].copy()
+        consumption = consumption_profile["heat_consumption"].copy()
         system_type='heating_system'
     elif system_name == 'cooling_system_id':
-        consumption = consumption_profile['cool_consumption'].copy()
+        consumption = consumption_profile["cool_consumption"].copy()
         system_type='cooling_system'
     else:
         consumption=[0]*8760
@@ -174,9 +177,11 @@ def calculate_building_indicators(consumption_profile, generation_system_profile
     total_final_energy=instantiate_final_energy_with_json()
     energy_systems_catalogue=load_energy_system_catalogue()
     consumption=[]
+    print(consumption_profile)
     if building_energy_asset is not None:
+        print(consumption_profile.keys())
         # Initialize total_electricity_use with the base consumption profile
-        total_electricity_use = consumption_profile['elec_consumption'].copy()
+        total_electricity_use = consumption_profile.get('elec_consumption', [])
         for asset in building_energy_asset:
             if asset['generation_system_id'] in list_of_hps:
                 # Perform element-wise summation for time_series_input1
@@ -661,6 +666,7 @@ def get_indicators_from_baseline(front_data, data, building_consumption_dict, de
             "cooling_system": cooling_consumption,
             "dhw_system": dhw_consumption
         }
+
         building_energy_asset=[]
         (
             total_PV[building_id],
@@ -670,7 +676,9 @@ def get_indicators_from_baseline(front_data, data, building_consumption_dict, de
             self_consumption[building_id],
             total_final_energy[building_id],
             KPIs[building_id]
-        ) = calculate_building_indicators(consumption_profile=building_consumption, generation_system_profile=generation_system_profile, building_energy_asset=building_energy_asset,
+        ) = calculate_building_indicators(consumption_profile=building_consumption,
+                                          generation_system_profile=generation_system_profile,
+                                          building_energy_asset=building_energy_asset,
                                           timestep_count=len(dhw_consumption))
 
         (total_primary_energy_kWh, total_co2, total_primary_energy_non_renewable, total_primary_energy_renewable,
