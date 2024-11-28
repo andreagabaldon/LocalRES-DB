@@ -4,38 +4,72 @@ from scripts.RESbased_scenario_generator.classes_database import FinalEnergy, Bu
 import pandas as pd
 from scripts.KPI_module.KPI_module import (kpi_ctz_factors,tv_h, streaming_h, pizza_h, battery_charges, el_car_charges,trees_number,
                         streaming_emission_hours,icv_km,wine_bottles)
+# Define constants for recurring string literals
+BUILDING = "building"
+BUILDING_CONSUMPTION="building_consumption"
+DEMANDPROFILE = "demandprofile"
+HEATING_SYSTEM = "heating_system"
+COOLING_SYSTEM = "cooling_system"
+DHW_SYSTEM = "dhw_system"
+ELECTRICITY_DEMAND = "electricity_demand"
+HEATING_DEMAND = "heating_demand"
+COOLING_DEMAND = "cooling_demand"
+DHW_DEMAND = "dhw_demand"
+ELECTRICITY_CONSUMPTION = "elec_consumption"
+HEAT_CONSUMPTION = "heat_consumption"
+COOL_CONSUMPTION = "cool_consumption"
+DHW_CONSUMPTION = "dhw_consumption"
+ENERGY_CARRIER_INPUT1_ID = "energy_carrier_input_1_id"
+ENERGY_CARRIER_INPUT1="energy_carrier_input_1"
+FINAL_ENERGY_ELECTRICITY_GRID = "final_energy_electricity_grid"
+AVAILABILITY_TS = "availability_ts"
+VALUE_INPUT1 = "value_input1"
+PMAX_SCALAR = "pmax_scalar"
+GENERATION_SYSTEM_ID="generation_system_id"
+FUEL_YIELD_1="fuel_yield1"
+GENERATION_SYSTEM_PROFILE="generation_system_profile"
+GENERATION_SYSTEM_PROFILE_ID="generation_system_profile_id"
+BUILDING_ASSET_CONTEXT="building_asset_context"
+DEMAND_PROFILE="demand_profile"
+NATIONAL_ENERGY_CARRIER_DATA="national_energy_carrier_production"
+DHW_SYSTEM_ID="dhw_system_id"
+HEATING_SYSTEM_ID="heating_system_id"
+COOLING_SYSTEM_ID="cooling_system_id"
+ELECTRICITY_SYSTEM_ID="electricity_system_id"
+
+
 
 def handle_demand_profile(building_asset_context,generation_system_profile,consumption_profile):
-    consumption_profile_length=len(consumption_profile['elec_consumption'])
-    # Handle demand_profile: If it doesn't exist, calculate using generation system profiles
-    building_id=building_asset_context.get('id')
-    demand_profile = building_asset_context.get('building', {}).get('demandprofile')
+    consumption_profile_length=len(consumption_profile[ELECTRICITY_CONSUMPTION])
+    # Handle demand_profile: If it doesn"t exist, calculate using generation system profiles
+    building_id=building_asset_context.get("id")
+    demand_profile = building_asset_context.get(BUILDING, {}).get(DEMANDPROFILE)
     if demand_profile is None and generation_system_profile is not None:
         # Retrieve fuel yield values from the generation system profiles
-        if generation_system_profile.get('heating_system', {}) is not None:
-            fuel_yield1_heating = generation_system_profile.get('heating_system', {}).get('fuel_yield1', 1)
+        if generation_system_profile.get(HEATING_SYSTEM, {}) is not None:
+            fuel_yield1_heating = generation_system_profile.get(HEATING_SYSTEM, {}).get(FUEL_YIELD_1, 1)
         else:
             fuel_yield1_heating = 0
 
-        if generation_system_profile.get('cooling_system', {}) is not None:
-            fuel_yield1_cooling = generation_system_profile.get('cooling_system', {}).get('fuel_yield1', 1)
+        if generation_system_profile.get(COOLING_SYSTEM, {}) is not None:
+            fuel_yield1_cooling = generation_system_profile.get(COOLING_SYSTEM, {}).get(FUEL_YIELD_1, 1)
         else:
             fuel_yield1_cooling = 0
-            consumption_profile['cool_consumption']=[0]*consumption_profile_length
-        if generation_system_profile.get('dhw_system', {}) is not None:
-            fuel_yield1_dhw = generation_system_profile.get('dhw_system', {}).get('fuel_yield1', 1)
+            consumption_profile[COOL_CONSUMPTION]=[0]*consumption_profile_length
+        if generation_system_profile.get(DHW_SYSTEM, {}) is not None:
+            fuel_yield1_dhw = generation_system_profile.get(DHW_SYSTEM, {}).get(FUEL_YIELD_1, 1)
         else:
             fuel_yield1_dhw = 0
-            consumption_profile['dhw_consumption']=[0]*consumption_profile_length
+            consumption_profile[DHW_CONSUMPTION]=[0]*consumption_profile_length
 
         # Calculate demand profile using the consumption profile and fuel yields
         demand_profile = {
-            "electricity_demand": consumption_profile["elec_consumption"],
-            "heating_demand": [x * fuel_yield1_heating for x in
-                               consumption_profile.get("heat_consumption", [])],
-            "cooling_demand": [x * fuel_yield1_cooling for x in
-                               consumption_profile.get("cool_consumption", [])],
-            "dhw_demand": [x * fuel_yield1_dhw for x in consumption_profile.get("dhw_consumption", [])]
+            ELECTRICITY_DEMAND: consumption_profile[ELECTRICITY_CONSUMPTION],
+            HEATING_DEMAND: [x * fuel_yield1_heating for x in
+                               consumption_profile.get(HEAT_CONSUMPTION, [])],
+            COOLING_DEMAND: [x * fuel_yield1_cooling for x in
+                               consumption_profile.get(COOL_CONSUMPTION, [])],
+            DHW_DEMAND: [x * fuel_yield1_dhw for x in consumption_profile.get(DHW_CONSUMPTION, [])]
         }
         return demand_profile
 
@@ -82,35 +116,35 @@ def check_system_type_to_get_consumption(system_name,consumption_profile):
     print(type(consumption_profile))
     print(consumption_profile.keys())
     system_type=None
-    if system_name == "dhw_system_id":
-        consumption = consumption_profile["dhw_consumption"].copy()
-        system_type='dhw_system'
-    elif system_name == 'heating_system_id':
-        consumption = consumption_profile["heat_consumption"].copy()
-        system_type='heating_system'
-    elif system_name == 'cooling_system_id':
-        consumption = consumption_profile["cool_consumption"].copy()
-        system_type='cooling_system'
+    if system_name == DHW_SYSTEM_ID:
+        consumption = consumption_profile[DHW_CONSUMPTION].copy()
+        system_type=DHW_SYSTEM
+    elif system_name == HEATING_SYSTEM_ID:
+        consumption = consumption_profile[HEAT_CONSUMPTION].copy()
+        system_type=HEATING_SYSTEM
+    elif system_name == COOLING_SYSTEM_ID:
+        consumption = consumption_profile[COOL_CONSUMPTION].copy()
+        system_type=COOLING_SYSTEM
     else:
         consumption=[0]*8760
-        system_type='electricity_system'
+        system_type="electricity_system"
     return consumption, system_type
 
 
 def instantiate_final_energy_with_json():
     parent_directory = os.path.dirname(os.path.abspath(__file__))
     json_file_path = os.path.join(parent_directory,
-                                  'catalogues', 'energy_carrier.json')
-    with open(json_file_path, 'r') as file:
+                                  "catalogues", "energy_carrier.json")
+    with open(json_file_path, "r") as file:
         json_data = json.load(file)
 
     total_final_energy = {} #diccionario de instancias de la clase Final Energy para cada energy carrier
     for entry in json_data:
         if entry.get("final"):
-            id = entry['id']
+            id = entry["id"]
             total_final_energy[id] = FinalEnergy(id)
-            total_final_energy[id].name = entry['name']
-            total_final_energy[id].final = entry['final']
+            total_final_energy[id].name = entry["name"]
+            total_final_energy[id].final = entry["final"]
 
     return total_final_energy
 
@@ -118,18 +152,18 @@ def instantiate_final_energy_with_json():
 
 def load_energy_system_catalogue():
     parent_directory = os.path.dirname(os.path.abspath(__file__))
-    input_files_path = os.path.join(parent_directory,'catalogues',
-                                    'generation_systems_catalogue.json')
-    with open(input_files_path, 'r') as file:
+    input_files_path = os.path.join(parent_directory,"catalogues",
+                                    "generation_systems_catalogue.json")
+    with open(input_files_path, "r") as file:
         energy_systems_catalogue = json.load(file)
     return energy_systems_catalogue
 
 
 def filter_energy_systems_catalogue(energy_systems_catalogue, new_generation_system_id):
-    # Loop through each system in the 'systems' list
+    # Loop through each system in the "systems" list
     for system in energy_systems_catalogue:
-        # Check if the 'id' in the system matches the new_generation_system_id
-        if system['id'] == new_generation_system_id:
+        # Check if the "id" in the system matches the new_generation_system_id
+        if system["id"] == new_generation_system_id:
             return system  # Return the matching system dictionary
 
     return None  # Return None if no matching system is found
@@ -140,12 +174,12 @@ def calculate_building_indicators(consumption_profile, generation_system_profile
     Parameters
     ----------
     consumption_profile is the dictionary of consumption, typically:
-        "building_consumption":{
+        BUILDING_CONSUMPTION:{
             "id": int,
-            "heat_consumption":[],
-            "dhw_consumption":[],
-            "elec_consumption":[],
-            "cool_consumption":[]
+            HEAT_CONSUMPTION:[],
+            DHW_CONSUMPTION:[],
+            ELECTRICITY_CONSUMPTION:[],
+            COOL_CONSUMPTION:[]
             }
     generation_system_profile is the dictionary of the energy systems
     building_energy_asset is a list of several assets
@@ -177,24 +211,22 @@ def calculate_building_indicators(consumption_profile, generation_system_profile
     total_final_energy=instantiate_final_energy_with_json()
     energy_systems_catalogue=load_energy_system_catalogue()
     consumption=[]
-    print(consumption_profile)
     if building_energy_asset is not None:
-        print(consumption_profile.keys())
         # Initialize total_electricity_use with the base consumption profile
-        total_electricity_use = consumption_profile.get('elec_consumption', [])
+        total_electricity_use = consumption_profile.get(ELECTRICITY_CONSUMPTION, [])
         for asset in building_energy_asset:
-            if asset['generation_system_id'] in list_of_hps:
+            if asset[GENERATION_SYSTEM_ID] in list_of_hps:
                 # Perform element-wise summation for time_series_input1
-                time_series_input1_values =asset["availability_ts"]["value_input1"].copy()
+                time_series_input1_values =asset[AVAILABILITY_TS][VALUE_INPUT1].copy()
                 total_electricity_use = [
                             total_electricity_use[i] + time_series_input1_values[i]
                             for i in range(len(total_electricity_use))
                         ]
-                if asset['generation_system_id'] in cooling_hps_list:
+                if asset[GENERATION_SYSTEM_ID] in cooling_hps_list:
                     cooling_asset = True
-                if asset['generation_system_id'] in dhw_hps_list:
+                if asset[GENERATION_SYSTEM_ID] in dhw_hps_list:
                     dhw_asset = True
-                if asset['generation_system_id'] in heating_hps_list:
+                if asset[GENERATION_SYSTEM_ID] in heating_hps_list:
                     heating_asset = True
             #falta ..
 
@@ -205,30 +237,30 @@ def calculate_building_indicators(consumption_profile, generation_system_profile
             #System_id is an integer, you can safely check it
             #Get consumption
             consumption, system_type=check_system_type_to_get_consumption(system_name, consumption_profile)
-            if system_name == "dhw_system_id" and system_id in dhw_hps_list and dhw_asset == False:
+            if system_name == DHW_SYSTEM_ID and system_id in dhw_hps_list and dhw_asset == False:
                 total_electricity_use = add_electricity_consumption(total_electricity_use, consumption)
-            elif system_name =='heating_system_id' and system_id in heating_hps_list and heating_asset == False:
+            elif system_name ==HEATING_SYSTEM_ID and system_id in heating_hps_list and heating_asset == False:
                 total_electricity_use = add_electricity_consumption(total_electricity_use, consumption)
-            elif system_name =='cooling_system_id' and system_id in cooling_hps_list and cooling_asset == False:
-                #If cooling_system_id is in list_of_new_hps and is not already found in asset['generation_system_id],
+            elif system_name ==COOLING_SYSTEM_ID and system_id in cooling_hps_list and cooling_asset == False:
+                #If cooling_system_id is in list_of_new_hps and is not already found in asset["generation_system_id],
                 # the program will proceed to sum the corresponding cool_consumption values with total_electricity_use for each hour.
                 total_electricity_use = add_electricity_consumption(total_electricity_use, consumption)
-            elif system_name == "dhw_system_id" and dhw_asset == False and generation_system_profile[system_type] is not None:
-                fuels_id=generation_system_profile[system_type]['energy_carrier_input_1_id']
+            elif system_name == DHW_SYSTEM_ID and dhw_asset == False and generation_system_profile[system_type] is not None:
+                fuels_id=generation_system_profile[system_type][ENERGY_CARRIER_INPUT1_ID ]
                 total_final_energy[fuels_id].add_new_consumption(consumption)
-            elif system_name == "heating_system_id" and heating_asset == False and generation_system_profile[system_type] is not None:
-                fuels_id=generation_system_profile[system_type]['energy_carrier_input_1_id']
+            elif system_name == HEATING_SYSTEM_ID and heating_asset == False and generation_system_profile[system_type] is not None:
+                fuels_id=generation_system_profile[system_type][ENERGY_CARRIER_INPUT1_ID ]
                 total_final_energy[fuels_id].add_new_consumption(consumption)
-            elif system_name == "cooling_system_id" and cooling_asset == False and generation_system_profile[system_type] is not None:
-                fuels_id=generation_system_profile[system_type]['energy_carrier_input_1_id']
+            elif system_name == COOLING_SYSTEM_ID and cooling_asset == False and generation_system_profile[system_type] is not None:
+                fuels_id=generation_system_profile[system_type][ENERGY_CARRIER_INPUT1_ID ]
                 total_final_energy[fuels_id].add_new_consumption(consumption)
 
         for asset in building_energy_asset:
-            if asset['generation_system_id'] in electric_asset_list:
+            if asset[GENERATION_SYSTEM_ID] in electric_asset_list:
                 # PV system, scale output by pmax_scalar
                 # Perform element-wise summation for time_series_input1
-                time_series_input1_values =asset["availability_ts"]["value_input1"].copy()
-                total_PV = [x * asset['pmax_scalar'] for x in time_series_input1_values]
+                time_series_input1_values =asset[AVAILABILITY_TS][VALUE_INPUT1].copy()
+                total_PV = [x * asset[PMAX_SCALAR] for x in time_series_input1_values]
                 electricity_asset = True
                 # Calculate self-consumption
                 self_consumption = calculate_self_consumption(total_electricity_use, total_PV)
@@ -241,12 +273,12 @@ def calculate_building_indicators(consumption_profile, generation_system_profile
 
                 #Calculate self-sufficiency
                 self_sufficiency = calculate_self_sufficiency(self_consumption, total_electricity_use)
-            if asset['generation_system_id'] not in list_of_hps and asset[
-                'generation_system_id'] not in electric_asset_list:
-                    time_series_input1_values = asset["availability_ts"]["value_input1"].copy()
-                    total_input1 = [x * asset['pmax_scalar'] for x in time_series_input1_values]
-                    system = filter_energy_systems_catalogue(energy_systems_catalogue, asset['generation_system_id'])
-                    fuels_id=int(system['energy_carrier_input_1_id'])
+            if asset[GENERATION_SYSTEM_ID] not in list_of_hps and asset[
+                GENERATION_SYSTEM_ID] not in electric_asset_list:
+                    time_series_input1_values = asset[AVAILABILITY_TS][VALUE_INPUT1].copy()
+                    total_input1 = [x * asset[PMAX_SCALAR] for x in time_series_input1_values]
+                    system = filter_energy_systems_catalogue(energy_systems_catalogue, asset[GENERATION_SYSTEM_ID])
+                    fuels_id=int(system[ENERGY_CARRIER_INPUT1_ID ])
                     total_final_energy[fuels_id].add_new_consumption(total_input1)
 
         if electricity_asset == False:
@@ -260,7 +292,7 @@ def calculate_building_indicators(consumption_profile, generation_system_profile
     else:
         #there is no asset in this building
         # Initialize total_electricity_use with the base consumption profile
-        total_electricity_use = consumption_profile['elec_consumption'].copy()
+        total_electricity_use = consumption_profile[ELECTRICITY_CONSUMPTION].copy()
         for system_name, system_id in generation_system_profile.items():
             # Check if the value is an integer (system ID)
             if not isinstance(system_id, int):
@@ -268,13 +300,13 @@ def calculate_building_indicators(consumption_profile, generation_system_profile
             # Get consumption
             consumption, system_type = check_system_type_to_get_consumption(system_name, consumption_profile)
                 # Now, system_id is an integer, and you can safely check it
-            if system_name == "dhw_system_id" and system_id in dhw_hps_list:
+            if system_name == DHW_SYSTEM_ID and system_id in dhw_hps_list:
                 total_electricity_use = add_electricity_consumption(total_electricity_use, consumption)
-            elif system_name == "heating_system_id" and system_id in heating_hps_list:
+            elif system_name == HEATING_SYSTEM_ID and system_id in heating_hps_list:
                 total_electricity_use = add_electricity_consumption(total_electricity_use, consumption)
-            elif system_name == "cooling_system_id" and system_id in cooling_hps_list:
+            elif system_name == COOLING_SYSTEM_ID and system_id in cooling_hps_list:
                 total_electricity_use = add_electricity_consumption(total_electricity_use, consumption)
-            elif system_name == "electricity_system_id" and system_id == 79:
+            elif system_name == ELECTRICITY_SYSTEM_ID and system_id == 79:
                 # This is the grid
                 # grid_consumption equal to total_electricity_use
                 grid_consumption = total_electricity_use
@@ -287,7 +319,7 @@ def calculate_building_indicators(consumption_profile, generation_system_profile
             else:
                 #this means is not a heat pump nor electricity grid but other type of system, therefore:
                 if generation_system_profile[system_type] is not None:
-                    fuels_id=generation_system_profile[system_type]['energy_carrier_input_1_id']
+                    fuels_id=generation_system_profile[system_type][ENERGY_CARRIER_INPUT1_ID ]
                     total_final_energy[fuels_id].add_new_consumption(consumption)
 
     total_final_energy[12].add_new_consumption(grid_consumption)
@@ -296,11 +328,11 @@ def calculate_building_indicators(consumption_profile, generation_system_profile
     # Loop through the generation_system_profile
     for system_name, system in generation_system_profile.items():
         if system_name.endswith(
-                '_system') and system is not None:  # Check if system ends with '_system' and is not None
-            if 'energy_carrier_input_1' in system and system['energy_carrier_input_1'].get('final') == True:
+                "_system") and system is not None:  # Check if system ends with "_system" and is not None
+            if ENERGY_CARRIER_INPUT1 in system and system[ENERGY_CARRIER_INPUT1].get("final") == True:
                 # Get the ID and KPI data
-                energy_carrier_id = system['energy_carrier_input_1']['id']
-                kpi_data = system['energy_carrier_input_1']['national_energy_carrier_production'][
+                energy_carrier_id = system[ENERGY_CARRIER_INPUT1]["id"]
+                kpi_data = system[ENERGY_CARRIER_INPUT1][NATIONAL_ENERGY_CARRIER_DATA][
                     0]
                 if kpi_data is not None:
                     KPIs[energy_carrier_id] = BuildingKPIs(total_final_energy[energy_carrier_id], kpi_data)
@@ -312,23 +344,38 @@ def calculate_building_indicators(consumption_profile, generation_system_profile
 def aggregate_demand_profiles(demand_profile):
     # Initialize a dictionary to store the aggregated demand
     total_demand = {}
+    # Check if demand_profile is a list or a dictionary
+    if isinstance(demand_profile, list):
+        # Loop over each building"s demand profile in the list
+        for building in demand_profile:
+            # Get the specific demand profile dictionary for each building
+            profile = building.get(DEMAND_PROFILE, {})
 
-    # Loop over each building's demand profile
-    for building in demand_profile:
-        # Get the specific demand profile dictionary for each building
-        profile = building.get('demand_profile', {})
+            # Loop through each demand type in the building"s demand profile
+            for demand_type, demand_values in profile.items():
+                # If the demand type is already in total_demand, sum it element-wise
+                if demand_type in total_demand:
+                    total_demand[demand_type] = [
+                        total_demand[demand_type][i] + demand_values[i]
+                        for i in range(len(demand_values))
+                    ]
+                else:
+                    # If it"s the first occurrence, initialize it in total_demand
+                    total_demand[demand_type] = demand_values
 
-        # Loop through each demand type in the building's demand profile
-        for demand_type, demand_values in profile.items():
-            # If the demand type is already in total_demand, sum it element-wise
+    elif isinstance(demand_profile, dict):
+        # If demand_profile is a single dictionary, process it directly
+        for demand_type, demand_values in demand_profile.get(DEMAND_PROFILE, {}).items():
             if demand_type in total_demand:
                 total_demand[demand_type] = [
                     total_demand[demand_type][i] + demand_values[i]
                     for i in range(len(demand_values))
                 ]
             else:
-                # If it's the first occurrence, initialize it in total_demand
                 total_demand[demand_type] = demand_values
+
+    else:
+        raise TypeError("demand_profile must be either a list or a dictionary.")
 
     return total_demand
 
@@ -337,7 +384,7 @@ def community_KPIs(citizen_KPIs,total_demand):
     # Initialize an empty dictionary to hold the sum of each KPI
     aggregate_KPIs = {}
 
-    # Loop through each building's KPI data in citizen_KPIs
+    # Loop through each building"s KPI data in citizen_KPIs
     for building_id, kpis in citizen_KPIs.items():
         # Loop through each KPI entry for the building
         for kpi in kpis:
@@ -357,7 +404,7 @@ def community_KPIs(citizen_KPIs,total_demand):
                 # Determine the length of the time series if not provided
                 timestep_count = len(kpi_value)
 
-                # If the KPI name already exists, add each timestep's value element-wise
+                # If the KPI name already exists, add each timestep"s value element-wise
                 if kpi_name in aggregate_KPIs:
                     aggregate_KPIs[kpi_name]["value"] = [
                         aggregate_KPIs[kpi_name]["value"][i] + kpi_value[i]
@@ -367,11 +414,11 @@ def community_KPIs(citizen_KPIs,total_demand):
                     # Initialize the entry in the aggregate dictionary with the list and unit
                     aggregate_KPIs[kpi_name] = {"value": kpi_value, "unit": kpi["unit"]}
 
-    aggregate_KPIs['KPI_peak_heat_demand_[kWh]']={"value": max(total_demand['heating_demand']),"unit": 'kWh'}
-    aggregate_KPIs['KPI_peak_dhw_demand_[kWh]']={"value":max(total_demand['dhw_demand']),"unit": 'kWh'}
-    aggregate_KPIs['KPI_peak_cooling_demand_[kWh]']={"value": max(total_demand['cooling_demand']),"unit": 'kWh'}
-    aggregate_KPIs['KPI_peak_elec_demand_[kWh]']={"value": max(total_demand['electricity_demand']),"unit": 'kWh'}
-    aggregate_KPIs['KPI_peak_electricity_consumption_[kWh]']={"value": max(aggregate_KPIs['final_energy_electricity_grid']['value']),"unit": 'kWh'}
+    aggregate_KPIs["KPI_peak_heat_demand_[kWh]"]={"value": max(total_demand[HEATING_DEMAND]),"unit": "kWh"}
+    aggregate_KPIs["KPI_peak_dhw_demand_[kWh]"]={"value":max(total_demand[DHW_DEMAND]),"unit": "kWh"}
+    aggregate_KPIs["KPI_peak_cooling_demand_[kWh]"]={"value": max(total_demand[COOLING_DEMAND]),"unit": "kWh"}
+    aggregate_KPIs["KPI_peak_elec_demand_[kWh]"]={"value": max(total_demand[ELECTRICITY_DEMAND]),"unit": "kWh"}
+    aggregate_KPIs["KPI_peak_electricity_consumption_[kWh]"]={"value": max(aggregate_KPIs[FINAL_ENERGY_ELECTRICITY_GRID]["value"]),"unit": "kWh"}
     # `aggregate_KPIs` now contains the summed values for each KPI across all buildings
     return aggregate_KPIs
 
@@ -449,10 +496,10 @@ def get_totals_per_building (KPIs,timestep_count,final_energy):
     FinalEnergy_dic = {}
 
     for key, energy_instance in final_energy.items():
-        # Check if there's any non-zero value in hourly_data
+        # Check if there"s any non-zero value in hourly_data
         if any(value > 0 for value in energy_instance.hourly_data):
             # Add to the dictionary with the appropriate name as key
-            FinalEnergy_dic[f'final_energy_{energy_instance.name}'] = energy_instance.hourly_data
+            FinalEnergy_dic[f"final_energy_{energy_instance.name}"] = energy_instance.hourly_data
 
     return (total_primary_energy_kWh, total_co2,total_primary_energy_non_renewable, total_primary_energy_renewable,
             total_h_costs, total_non_h_costs, TV_h, streaming_hours, Pizza_h, Battery_charges, ElCar_charges, Trees_number,
@@ -480,23 +527,23 @@ def recalculate_indicators (community_context):
     total_co2 = {}
     hourly_KPIs = {}
     demand_profiles_context=[]
-    if 'building_asset_context' in community_context and isinstance(community_context['building_asset_context'], list):
-        for building_asset_context in community_context['building_asset_context']:
+    if BUILDING_ASSET_CONTEXT in community_context and isinstance(community_context[BUILDING_ASSET_CONTEXT], list):
+        for building_asset_context in community_context[BUILDING_ASSET_CONTEXT]:
             idx=0
-            # Check if 'generation_system_profile_id' is in the building_dic
-            if 'generation_system_profile_id' in building_asset_context:
-                # Handle building_id: If it doesn't exist, assign an incremented id
-                building_id = building_asset_context.get('id', f'building_{idx + 1}')  # Incremental ID if missing
+            # Check if GENERATION_SYSTEM_PROFILE_ID is in the building_dic
+            if GENERATION_SYSTEM_PROFILE_ID in building_asset_context:
+                # Handle building_id: If it doesn"t exist, assign an incremented id
+                building_id = building_asset_context.get("id", f"building_{idx + 1}")  # Incremental ID if missing
 
-                # Handle consumption_profile: Raise an error if it doesn't exist
-                if 'building_consumption' not in building_asset_context or building_asset_context[
-                    'building_consumption'] is None:
+                # Handle consumption_profile: Raise an error if it doesn"t exist
+                if BUILDING_CONSUMPTION not in building_asset_context or building_asset_context[
+                    BUILDING_CONSUMPTION] is None:
                     raise ValueError(f"Consumption profile does not exist for building ID: {building_id}")
 
-                consumption_profile = building_asset_context['building_consumption']
+                consumption_profile = building_asset_context[BUILDING_CONSUMPTION]
 
                 # Handle timestep_count: If null, use the length of any of the consumption profile arrays
-                timestep_count = community_context.get('timestep_count')
+                timestep_count = community_context.get("timestep_count")
                 if timestep_count is None:
                     if len(consumption_profile) > 0:
                         timestep_count = len(
@@ -504,20 +551,20 @@ def recalculate_indicators (community_context):
                     else:
                         raise ValueError(f"Timestep count could not be determined for building ID: {building_id}")
 
-                # Handle building_energy_asset: Assign None if it doesn't exist
-                building_energy_asset = building_asset_context.get('building_energy_asset', None)
+                # Handle building_energy_asset: Assign None if it doesn"t exist
+                building_energy_asset = building_asset_context.get("building_energy_asset", None)
 
-                # Handle generation_system_profile: Assign None if it doesn't exist
-                generation_system_profile = building_asset_context.get('generation_system_profile', None)
+                # Handle generation_system_profile: Assign None if it doesn"t exist
+                generation_system_profile = building_asset_context.get(GENERATION_SYSTEM_PROFILE, None)
                 demand_profile=handle_demand_profile(building_asset_context,generation_system_profile,consumption_profile)
-                demand_profiles_context.append({'demand_profile': demand_profile})
+                demand_profiles_context.append({DEMAND_PROFILE: demand_profile})
                 # Further processing such as adding to KPIs, calculating other values, etc.
-                #timestep_count=community_context['timestep_count']
-                #building_id = building_asset_context['id']
-                #building_energy_asset = building_asset_context['building_energy_asset']
-                #generation_system_profile = building_asset_context['generation_system_profile']
-                #consumption_profile = building_asset_context['building_consumption']
-                #demand_profile=building_asset_context['building']['demandprofile']
+                #timestep_count=community_context["timestep_count"]
+                #building_id = building_asset_context["id"]
+                #building_energy_asset = building_asset_context["building_energy_asset"]
+                #generation_system_profile = building_asset_context[GENERATION_SYSTEM_PROFILE]
+                #consumption_profile = building_asset_context[BUILDING_CONSUMPTION]
+                #demand_profile=building_asset_context[BUILDING][DEMANDPROFILE]
                 hourly_KPIs[building_id] = {}
                 # Calculate building indicators
                 (
@@ -534,11 +581,11 @@ def recalculate_indicators (community_context):
                 # Add consumption_profile and demand_profile
                 for key, value in consumption_profile.items():
                     hourly_KPIs[building_id].update({
-                        f'consumption_profile_{key}': value})
+                        f"consumption_profile_{key}": value})
 
                 for key, value in demand_profile.items():
                     hourly_KPIs[building_id].update({
-                        f'demand_profile_{key}' : value})
+                        f"demand_profile_{key}" : value})
                 idx+=1
 
             (total_primary_energy_kWh, total_co2, total_primary_energy_non_renewable, total_primary_energy_renewable,
@@ -548,7 +595,7 @@ def recalculate_indicators (community_context):
                                                                                                        timestep_count=timestep_count,
                                                                                                        final_energy=total_final_energy[building_id])
             # calculate peak heat demand
-            KPI_peak_heat_demand = max(demand_profile['heating_demand'])
+            KPI_peak_heat_demand = max(demand_profile[HEATING_DEMAND])
             # calculate peak cooling demand
             KPI_peak_elec_demand = max(total_electricity_use[building_id])
 
@@ -632,39 +679,44 @@ def get_indicators_from_baseline(front_data, data, building_consumption_dict, de
                 raise ValueError(
                     f"No se encontró el perfil de estadísticas del edificio con id {building_statistics_profile_id}")
 
-            generation_system_profile = building_profile.get("generation_system_profile", {})
+            generation_system_profile = building_profile.get(GENERATION_SYSTEM_PROFILE, {})
 
         else:
             # Else case: No "building_statistics_profile_id" found, we use the "building_statistics_profile"
             building_statistics_profiles = data.get("building_statistics_profile", [])
-            generation_system_profile = building_statistics_profiles.get("generation_system_profile", {})
+            generation_system_profile = building_statistics_profiles.get(GENERATION_SYSTEM_PROFILE, {})
 
             if isinstance(building_statistics_profiles, dict):
                 building_statistics_profiles = [building_statistics_profiles]
         building_id=i+1
         # Get the consumption data for each type of generation system (8760 hourly values)
+        # Fetch the building consumption
         building_consumption = building_consumption_dict.get(f"building_id_{i + 1}", {})
-        heating_consumption = building_consumption.get("heat_consumption", [0] * 8760)
-        electricity_consumption = building_consumption.get("elec_consumption", [0] * 8760)
-        cooling_consumption = building_consumption.get("cool_consumption", [0] * 8760)
-        dhw_consumption = building_consumption.get("dhw_consumption", [0] * 8760)
+        # Check if the retrieved value is empty; if so, get the value for "building_id_1"
+        if not building_consumption:
+            building_consumption = building_consumption_dict.get("building_id_1", {})
+
+        heating_consumption = building_consumption.get(HEAT_CONSUMPTION, [0] * 8760)
+        electricity_consumption = building_consumption.get(ELECTRICITY_CONSUMPTION, [0] * 8760)
+        cooling_consumption = building_consumption.get(COOL_CONSUMPTION, [0] * 8760)
+        dhw_consumption = building_consumption.get(DHW_CONSUMPTION, [0] * 8760)
 
         # Check if demand_profile contains multiple buildings or a single building
         if isinstance(demand_profile, list):
             # Multiple buildings: loop through each building
             demand_profile_building = demand_profile[i]
-            demand_profile_building = demand_profile_building['demand_profile']
+            demand_profile_building = demand_profile_building[DEMAND_PROFILE]
         else:
             # Single building case
-            demand_profile_building = demand_profile['demand_profile']
+            demand_profile_building = demand_profile[DEMAND_PROFILE]
             # Process the single building profile here
 
         # Define the systems to process (linking them to the profiles)
         systems = {
-            "heating_system": heating_consumption,
+            HEATING_SYSTEM: heating_consumption,
             "electricity_system": electricity_consumption,
-            "cooling_system": cooling_consumption,
-            "dhw_system": dhw_consumption
+            COOLING_SYSTEM: cooling_consumption,
+            DHW_SYSTEM: dhw_consumption
         }
 
         building_energy_asset=[]
@@ -689,7 +741,7 @@ def get_indicators_from_baseline(front_data, data, building_consumption_dict, de
                                                                                                    final_energy=
                                                                                                    total_final_energy[
                                                                                                            building_id])
-        KPI_peak_heat_demand = max(demand_profile_building['heating_demand'])
+        KPI_peak_heat_demand = max(demand_profile_building[HEATING_DEMAND])
         # calculate peak cooling demand
         KPI_peak_elec_demand = max(total_electricity_use[building_id])
         # Store citizen KPIs for the building

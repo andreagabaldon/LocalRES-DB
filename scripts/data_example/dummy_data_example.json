@@ -141029,15 +141029,5 @@
                 }
             }
         }
-    ],
-    "node": [
-        {
-            "name": "TEST",
-            "geom": "POINT (-3 41)",
-            "id": 1,
-            "context_id": 1,
-            "community_energy_asset_input": [],
-            "community_energy_asset_output": []
-        }
     ]
 }

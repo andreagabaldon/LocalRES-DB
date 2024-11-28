@@ -63,9 +63,9 @@ def calculate_indicators(community_context):
 
 current_path=os.path.dirname(os.path.abspath(__file__))
 # choose simple (1) or intermmediate (2) pathway (the latter being the one with higher user inputs)
-pathway=1
+pathway=2
 #import path
-if pathway==1:
+if pathway==2:
     #inputs from use in the simple pathway
     front_data={
         "num_building": 3,
@@ -99,21 +99,22 @@ else:
     baseline, community_indicators= generate_baseline_pathway_intermediate(data, front_data)
 
 
-#user chooses a goal in the user-interface and based on the location of the chosen community country is passed:
-    # goals={
-    #         "1": "Higher rate of renewable energy",
-    #         "2": "Higher efficiency",
-    #         "3": "Energy self-sufficiency",
-    #         "4": "Decarbonisation of H&C",
-    #         "5": "Electrification",
-    #         "6": "E-mobility",
-    #     }
+# user chooses a goal in the user-interface and based on the location of the chosen community country is passed:
+#     goals={
+#             "1": "Higher rate of renewable energy",
+#             "2": "Higher efficiency",
+#             "3": "Energy self-sufficiency",
+#             "4": "Decarbonisation of H&C",
+#             "5": "Electrification",
+#             "6": "E-mobility",
+#         }
 
 inputs_user_goals={"goals": "3",
                    "country": "ES"
                    }
 recommendations_dic=generate_resbased_generator_list_technologies (front_data=inputs_user_goals)
 #the baseline context is obtained from the API database
+
 
 with open(os.path.join(current_path, 'scripts','data_example',
                                      'dummy_data_example.json'), 'r') as file:
@@ -122,6 +123,6 @@ with open(os.path.join(current_path, 'scripts','data_example',
 
 new_context=get_new_context(goal=inputs_user_goals["goals"],community_context=community_context, recommendations_dic=recommendations_dic)
 ##Optimise results with an optimisation engine (not open source in LocalRES project):
-
-#calculate indicators
-outputs_2=calculate_indicators(new_context)
+output_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'scripts','data_example', 'dummy_data_example_output.json')
+with open(output_file_path, 'w') as json_file:
+    json.dump(new_context, json_file, indent=4)

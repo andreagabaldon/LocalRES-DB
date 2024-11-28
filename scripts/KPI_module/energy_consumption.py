@@ -67,6 +67,13 @@ building_consumption_dict[f"building_id_{i+1}"] = {
     "generation_system_profile_id": generation_system_profile_id 
 }
 """
+# Define constants for recurring string literals
+ELECTRICITY_CONSUMPTION = "elec_consumption"
+HEAT_CONSUMPTION = "heat_consumption"
+COOL_CONSUMPTION = "cool_consumption"
+DHW_CONSUMPTION = "dhw_consumption"
+FUEL_YIELD_1="fuel_yield1"
+
 
 
 def generation_system_function(front_data, data, demand_profile):
@@ -148,7 +155,7 @@ def generation_system_function(front_data, data, demand_profile):
         if heating_system:
             EC_type = "heating_demand"
             demand_profile_list=demand_profile_for_building[EC_type]
-            FY_1 = heating_system.get("fuel_yield1")
+            FY_1 = heating_system.get(FUEL_YIELD_1)
             heating_consumption = energy_consumption_function(fuel_yield1=FY_1,demand_profile_list=demand_profile_list)
             if heating_consumption is None:
                 heating_consumption = [0] * 8760
@@ -169,7 +176,7 @@ def generation_system_function(front_data, data, demand_profile):
         # Processing DHW system
         if dhw_system:
             EC_type = "dhw_demand"
-            FY_1 = dhw_system.get("fuel_yield1")
+            FY_1 = dhw_system.get(FUEL_YIELD_1)
             demand_profile_list=demand_profile_for_building[EC_type]
             dhw_consumption =energy_consumption_function(fuel_yield1=FY_1,demand_profile_list=demand_profile_list)
             if dhw_consumption is None:
@@ -180,7 +187,7 @@ def generation_system_function(front_data, data, demand_profile):
         # Processing cooling system
         if cooling_system:
             EC_type = "cooling_demand"
-            FY_1 = cooling_system.get("fuel_yield1")
+            FY_1 = cooling_system.get(FUEL_YIELD_1)
             FY_2 = cooling_system.get("fuel_yield2")
             generation_system_profile = {
                 "cooling_system": {
@@ -197,10 +204,10 @@ def generation_system_function(front_data, data, demand_profile):
             cooling_consumption = [0] * 8760
 
         building_consumption_dict[f"building_id_{i + 1}"] = {
-            "elec_consumption": electricity_consumption,
-            "heat_consumption": heating_consumption,
-            "cool_consumption": cooling_consumption,
-            "dhw_consumption": dhw_consumption,
+            ELECTRICITY_CONSUMPTION: electricity_consumption,
+            HEAT_CONSUMPTION: heating_consumption,
+            COOL_CONSUMPTION: cooling_consumption,
+            DHW_CONSUMPTION: dhw_consumption,
             "generation_system_profile_id": generation_system_profile_id
         }
 
